@@ -2,7 +2,6 @@
 # https://www.pathofexile.com/api/trade/data/stats
 
 
-
 '''
 Builds a query as a Dictionary object, dumps that dictionary to JSON to be posted
 as query to the Path of Exile Trade Search
@@ -149,17 +148,42 @@ as query to the Path of Exile Trade Search
 import json
 import requests
 
-url = "https://www.pathofexile.com/api/trade/search/Metamorph"
+API_URL = "https://www.pathofexile.com/api/trade/search/Metamorph"
+TRADE_URL = "https://www.pathofexile.com/api/trade/fetch/"
 headers = {'content-type': 'application/json',
            'X-Requested-With': 'XMLHttpRequest'}
 
 query = {"query": {"status": "online",
-                   "name": "The Pariah",
+                   "name": "The Saviour",
                    "stats": [{"type": "and",
-                              "filters":[]}]},
+                              "filters": []}]},
          "sort": {"price": "asc"}
-        }
+         }
 
-r = requests.get(url, data=json.dumps(query), headers=headers)
-results = json.loads(r.text)
-print(results)
+
+def build_query(target: dict, category: str, content: dict):
+    target[category] = content
+    return target
+
+
+def build_url(api_result, api_id):
+    url = TRADE_URL
+    url_collection = []
+    id_counter = 0
+    for element in api_result[:10]:
+        if api_result[0] == element:
+            url += element
+        else:
+            url += "," + element
+    url += "?query=" + api_id
+    url_collection.append(url)
+    if len(api_result) > 10:
+        url_collection.extend(build_url(api_result[10:], api_id))
+    return url_collection
+
+
+if "__name__" == "__main__":
+    r = requests.get(API_URL, data=json.dumps(query), headers=headers)
+    results = json.loads(r.text)
+    for link in build_url(results['result'], results['id']):
+        print(link)
